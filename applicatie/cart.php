@@ -5,6 +5,10 @@ require_once __DIR__ . '/models/Cart.php';
 $cartModel = new Cart($pdo);
 $cart = $cartModel->all();
 
+$success = isset($_GET['success']) && $_GET['success'] == 1;
+$error = isset($_GET['error']) && $_GET['error'] == 1;
+
+
 $pageTitle = 'Winkelwagentje | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
 ?>
@@ -23,6 +27,18 @@ require __DIR__ . '/components/head.php';
                 </a>
             <?php endif; ?>
         </div>
+
+        <?php if ($success): ?>
+            <p>
+                Bedankt voor je bestelling!
+            </p>
+        <?php endif; ?>
+
+        <?php if ($error): ?>
+            <p>
+                Er is een fout opgetreden tijdens het maken van je bestelling. Probeer het later opnieuw.
+            </p>
+        <?php endif; ?>
 
         <?php if (!empty($cartModel->all())): ?>
             <form action="/actions/cart-update.php" method="POST">
