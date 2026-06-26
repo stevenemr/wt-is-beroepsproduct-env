@@ -11,3 +11,4 @@ $pdo = new PDO('sqlsrv:Server=' . $db_host . ';Database=' . $db_name . ';Connect
 unset($db_password); // Remove password to prevent echoing it
 
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);

@@ -1,4 +1,10 @@
 <?php
+require_once __DIR__ . '/config/init.php';
+require_once __DIR__ . '/models/Cart.php';
+
+$cartModel = new Cart($pdo);
+$cart = $cartModel->all();
+
 $pageTitle = 'Winkelwagentje | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
 ?>
@@ -11,113 +17,96 @@ require __DIR__ . '/components/head.php';
         <div class="title-button-row">
             <h1>Winkelwagentje</h1>
 
-            <a href="#checkout-form" class="btn btn-primary">
-                Bestellen &rarr;
-            </a>
+            <?php if (!empty($cartModel->all())): ?>
+                <a href="#checkout-form" class="btn btn-primary">
+                    Bestellen &rarr;
+                </a>
+            <?php endif; ?>
         </div>
 
+        <?php if (!empty($cartModel->all())): ?>
+            <form action="/actions/cart-update.php" method="POST">
 
-        <div class="cart-container">
-            <article class="cart-item">
-                <img src="/images/pizzas/margherita.jpg" alt="Foto van een pizza margherita">
+                <div class="cart-container">
+                    <?php foreach ($cart as $product): ?>
+                        <article class="cart-item">
+                            <img src="/images/products/<?= toSlug($product['name']) ?>.jpg" alt="Foto van een <?= htmlspecialchars($product['name']) ?>">
 
-                <div>
-                    <h2>Pizza Margherita | €10,50 p/s</h2>
-                    <p>Een klassieke pizza met tomatensaus, verse mozzarella en basilicum. Simpel maar heerlijk.</p>
+                            <div>
+                                <h2><?= htmlspecialchars($product['name']) ?> | €<?= number_format($product['price'], 2, ',') ?> p/s</h2>
+                            </div>
+
+                            <input type="number"
+                                name="quantities[<?= htmlspecialchars($product['name']) ?>]"
+                                min="0"
+                                value="<?= $product['quantity'] ?>">
+
+                            <a href="/actions/cart-remove.php?product_name=<?= urlencode($product['name']) ?>" class="btn btn-secondary btn-icon">
+                                <img src="/images/icons/trash.svg" alt="Trash icon">
+                                Verwijderen
+                            </a>
+                        </article>
+                    <?php endforeach; ?>
                 </div>
 
-                <input type="number" name="margherita-quantity" id="margherita-quantity" min="0" value="2">
-
-                <button class="btn btn-secondary btn-icon">
-                    <img src="/images/icons/trash.svg" alt="Trash icon">
-                    Verwijderen
-                </button>
-            </article>
-
-            <article class="cart-item">
-                <img src="/images/drinks/fanta.webp" alt="Foto van een flesje fanta">
-
-                <div>
-                    <h2>Fanta Sinaasappel | €2,75 p/s</h2>
-                    <p>Fris en fruitig. Een perfecte combinatie met een pittige pizza. 33cl.</p>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button type="submit" class="btn btn-secondary">Aantallen bijwerken</button>
                 </div>
 
-                <input type="number" name="fanta-quantity" id="fanta-quantity" min="0" value="1">
+            </form>
 
-                <button class="btn btn-secondary btn-icon">
-                    <img src="/images/icons/trash.svg" alt="Trash icon">
-                    Verwijderen
-                </button>
-            </article>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Subtotaal:</th>
+                        <td>€<?= number_format($cartModel->getSubtotal(), 2, ',', '.') ?></td>
+                    </tr>
+                    <tr>
+                        <th>Bezorgkosten:</th>
+                        <td>€<?= number_format(DELIVERY_COSTS, 2, ',', '.') ?></td>
+                    </tr>
+                    <tr>
+                        <th>Totaal:</th>
+                        <td><strong>€<?= number_format($cartModel->getTotal(), 2, ',', '.') ?></strong></td>
+                    </tr>
+                </tbody>
+            </table>
 
-            <article class="cart-item">
-                <img src="/images/drinks/spa.webp" alt="Foto van een flesje spa">
+            <form class="checkout-form" id="checkout-form" action="/actions/cart-order.php" method="POST">
+                <h2>Aflevergegevens</h2>
 
-                <div>
-                    <h2>Spa Blauw / Rood | € 2,25 p/s</h2>
-                    <p>Mineraalwater, still of bruisend. Licht en verfrissend bij elke maaltijd. 33cl.</p>
+                <div class="form-grid">
+                    <div class="form-field form-field-wide">
+                        <label for="full-name">Naam</label>
+                        <input type="text" id="full-name" name="full_name" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="street">Straat</label>
+                        <input type="text" id="street" name="street" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="house-number">Huisnummer</label>
+                        <input type="text" id="house-number" name="house_number" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="postal-code">Postcode</label>
+                        <input type="text" id="postal-code" name="postal_code" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="city">Plaats</label>
+                        <input type="text" id="city" name="city" required>
+                    </div>
                 </div>
 
-                <input type="number" name="spa-quantity" id="spa-quantity" min="0" value="1">
-
-                <button class="btn btn-secondary btn-icon">
-                    <img src="/images/icons/trash.svg" alt="Trash icon">
-                    Verwijderen
-                </button>
-            </article>
-        </div>
-
-        <table>
-            <tbody>
-                <tr>
-                    <th>Subtotaal:</th>
-                    <td>€26,00</td>
-                </tr>
-                <tr>
-                    <th>Bezorgkosten:</th>
-                    <td>€4,99</td>
-                </tr>
-                <tr>
-                    <th>Totaal:</th>
-                    <td>€30,99</td>
-                </tr>
-            </tbody>
-        </table>
-
-
-        <form class="checkout-form" id="checkout-form" action="/profile.php" method="get">
-            <h2>Aflevergegevens</h2>
-
-            <div class="form-grid">
-                <div class="form-field form-field-wide">
-                    <label for="full-name">Naam</label>
-                    <input type="text" id="full-name" name="full-name" autocomplete="name" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="street">Straat</label>
-                    <input type="text" id="street" name="street" autocomplete="address-line1" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="house-number">Huisnummer</label>
-                    <input type="text" id="house-number" name="house-number" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="postal-code">Postcode</label>
-                    <input type="text" id="postal-code" name="postal-code" autocomplete="postal-code" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="city">Plaats</label>
-                    <input type="text" id="city" name="city" autocomplete="address-level2" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Bestelling plaatsen</button>
-        </form>
-
+                <button type="submit" class="btn btn-primary">Bestelling plaatsen</button>
+            </form>
+        <?php else: ?>
+            <p>Je winkelmagentje is leeg</p>
+        <?php endif; ?>
     </section>
 </main>
 

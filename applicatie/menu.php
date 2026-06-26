@@ -21,7 +21,7 @@ require __DIR__ . '/components/head.php';
                 <?php foreach ($menuItems as $product): ?>
                     <article class="menu-item">
                         <div class="img-wrapper">
-                            <img src="/images/products/<?= toSlug($product['name']) ?>.jpg" alt="Foto van een pizza Margherita">
+                            <img src="/images/products/<?= toSlug($product['name']) ?>.jpg" alt="Foto van een <?= htmlspecialchars($product['name']) ?>">
                             <div class="menu-item-price">€ <?= number_format($product['price'], 2, ',') ?></div>
                         </div>
 
@@ -32,7 +32,7 @@ require __DIR__ . '/components/head.php';
                         <?php endif; ?>
 
                         <div class="btn-group">
-                            <a href="/cart.php" class="btn btn-primary">Bestellen</a>
+                            <a href="/actions/cart-add.php?product_name=<?= htmlspecialchars($product['name']) ?>" class="btn btn-primary">Bestellen</a>
                         </div>
                     </article>
                 <?php endforeach; ?>
