@@ -1,13 +1,16 @@
 <?php
 require_once __DIR__ . '/config/init.php';
 require_once __DIR__ . '/models/Cart.php';
+require_once __DIR__ . '/models/User.php';
 
 $cartModel = new Cart($pdo);
 $cart = $cartModel->all();
 
+$userModel = new User($pdo);
+$user = $userModel->getCurrentUser();
+
 $success = isset($_GET['success']) && $_GET['success'] == 1;
 $error = isset($_GET['error']) && $_GET['error'] == 1;
-
 
 $pageTitle = 'Winkelwagentje | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
@@ -94,7 +97,7 @@ require __DIR__ . '/components/head.php';
                 <div class="form-grid">
                     <div class="form-field form-field-wide">
                         <label for="full-name">Naam</label>
-                        <input type="text" id="full-name" name="full_name" required>
+                        <input type="text" id="full-name" name="full_name" value="<?= $user ? $user['first_name'] . ' ' . $user['last_name'] : '' ?>" required>
                     </div>
 
                     <div class="form-field">
