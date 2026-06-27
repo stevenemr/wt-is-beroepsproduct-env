@@ -44,6 +44,93 @@ class PizzaOrder extends BaseModel
 
 
     /**
+     * Get all orders for a specific username.
+     *
+     * @param  string $username
+     * @return array
+     */
+    public function getByUsername(string $username): array
+    {
+        $orders = [];
+        $stmt = $this->db->prepare('
+            SELECT * FROM Pizza_Order po 
+            JOIN Pizza_Order_Product pop ON po.order_id = pop.order_id
+            WHERE po.client_username = :username
+            ORDER BY po.datetime DESC
+        ');
+        $stmt->execute(['username' => $username]);
+        $ordersRaw = $stmt->fetchAll();
+
+        foreach ($ordersRaw as $orderRaw) {
+            $orderId = $orderRaw['order_id'];
+
+            if (!isset($orders[$orderId])) {
+                $orders[$orderId] = [
+                    'order_id'          => $orderId,
+                    'client_username'    => $orderRaw['client_username'],
+                    'client_name'        => $orderRaw['client_name'],
+                    'personnel_username' => $orderRaw['personnel_username'],
+                    'datetime'           => $orderRaw['datetime'],
+                    'status'             => $orderRaw['status'],
+                    'address'            => $orderRaw['address'],
+                    'products'           => []
+                ];
+            }
+
+            $orders[$orderId]['products'][] = [
+                'product_name' => $orderRaw['product_name'],
+                'quantity'     => $orderRaw['quantity']
+            ];
+        }
+
+        return $orders;
+    }
+
+
+    /**
+     * Get all orders for today.
+     *
+     * @return array
+     */
+    public function getTodaysOrders(): array
+    {
+        $orders = [];
+        $stmt = $this->db->prepare('
+            SELECT * FROM Pizza_Order po 
+            JOIN Pizza_Order_Product pop ON po.order_id = pop.order_id
+            WHERE CAST(po.datetime AS DATE) = CAST(GETDATE() AS DATE)
+            ORDER BY po.datetime ASC
+        ');
+        $stmt->execute();
+        $ordersRaw = $stmt->fetchAll();
+
+        foreach ($ordersRaw as $orderRaw) {
+            $orderId = $orderRaw['order_id'];
+
+            if (!isset($orders[$orderId])) {
+                $orders[$orderId] = [
+                    'order_id'          => $orderId,
+                    'client_username'    => $orderRaw['client_username'],
+                    'client_name'        => $orderRaw['client_name'],
+                    'personnel_username' => $orderRaw['personnel_username'],
+                    'datetime'           => $orderRaw['datetime'],
+                    'status'             => $orderRaw['status'],
+                    'address'            => $orderRaw['address'],
+                    'products'           => []
+                ];
+            }
+
+            $orders[$orderId]['products'][] = [
+                'product_name' => $orderRaw['product_name'],
+                'quantity'     => $orderRaw['quantity']
+            ];
+        }
+
+        return $orders;
+    }
+
+
+    /**
      * Add a order to the Pizza_Order and Pizza_Order_Product tables.
      *
      * @param  string $clientName

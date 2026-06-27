@@ -1,13 +1,23 @@
 <?php
 require_once __DIR__ . '/config/init.php';
 require_once __DIR__ . '/models/User.php';
+require_once __DIR__ . '/models/PizzaOrder.php';
 
 $userModel = new User($pdo);
 
-if (!$userModel->isLoggedIn() || $userModel->hasRole('Personnel')) {
+if (!$userModel->isLoggedIn() || !$userModel->hasRole('Personnel')) {
     header('location: /register-login.php');
     exit;
 }
+
+$orderModel = new PizzaOrder($pdo);
+$orders = $orderModel->getTodaysOrders();
+
+$statusLabels = [
+    1 => 'In de oven',
+    2 => 'Onderweg',
+    3 => 'Bezorgd'
+];
 
 $pageTitle = 'Bestellingsoverzicht medewerkers | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
@@ -38,38 +48,30 @@ require __DIR__ . '/components/head.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><a href="/order-detail.php">#1042</a></td>
-                        <td>17:45</td>
-                        <td>Steven Roest</td>
-                        <td>Bakkerstraat 81, 6811 EJ Arnhem</td>
-                        <td>2x Pizza Margherita, 1x Coca-Cola</td>
-                        <td>In de oven</td>
-                    </tr>
-                    <tr>
-                        <td>#1043</td>
-                        <td>18:05</td>
-                        <td>Sam Jansen</td>
-                        <td>Stationsplein 12, 6811KL Arnhem</td>
-                        <td>1x Pizza Diavola, 2x Spa Blauw / Rood</td>
-                        <td>Onderweg</td>
-                    </tr>
-                    <tr>
-                        <td>#1044</td>
-                        <td>18:20</td>
-                        <td>Noa Bakker</td>
-                        <td>Marktstraat 4, 6511AA Nijmegen</td>
-                        <td>1x Pizza Vegetariana, 1x Fanta Sinaasappel</td>
-                        <td>In de oven</td>
-                    </tr>
-                    <tr>
-                        <td>#1045</td>
-                        <td>18:35</td>
-                        <td>Yara de Vries</td>
-                        <td>Schoolweg 22, 6828GC Arnhem</td>
-                        <td>1x Pizza Quattro Stagioni, 1x Coca-Cola</td>
-                        <td>Onderweg</td>
-                    </tr>
+                    <?php foreach ($orders as $order): ?>
+                        <tr>
+                            <td><a href="/order-detail.php?id=<?= $order['order_id'] ?>">#<?= $order['order_id'] ?></a></td>
+                            <td><?= date('H:i', strtotime($order['datetime'])) ?></td>
+                            <td><?= $order['client_name'] ?></td>
+                            <td><?= $order['address'] ?></td>
+                            <td>
+                                <?php
+                                $items = [];
+                                foreach ($order['products'] as $product) {
+                                    $items[] = $product['quantity'] . 'x ' . $product['product_name'];
+                                }
+                                echo implode(', ', $items);
+                                ?>
+                            </td>
+                            <td><?= $statusLabels[$order['status']] ?? 'Onbekend' ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+
+                    <?php if (empty($orders)): ?>
+                        <tr>
+                            <td colspan="6">Geen bestellingen vandaag.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

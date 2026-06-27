@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config/init.php';
 require_once __DIR__ . '/models/User.php';
+require_once __DIR__ . '/models/PizzaOrder.php';
 
 $userModel = new User($pdo);
 
@@ -10,6 +11,15 @@ if (!$userModel->isLoggedIn()) {
 }
 
 $user = $userModel->getCurrentUser();
+
+$orderModel = new PizzaOrder($pdo);
+$orders = $orderModel->getByUsername($_SESSION['username']);
+
+$statusLabels = [
+    1 => 'In de oven',
+    2 => 'Onderweg',
+    3 => 'Bezorgd'
+];
 
 $pageTitle = 'Profiel | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
@@ -43,7 +53,7 @@ require __DIR__ . '/components/head.php';
             </article>
 
             <article class="dashboard-panel">
-                <h2>Jouw bestellingen (4)</h2>
+                <h2>Jouw bestellingen (<?= count($orders) ?>)</h2>
 
                 <div class="table-container">
                     <table>
@@ -51,61 +61,31 @@ require __DIR__ . '/components/head.php';
                             <tr>
                                 <th>Bestelnummer</th>
                                 <th>Datum</th>
-                                <th>Tijd</th>
                                 <th>Besteld</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>#1042</td>
-                                <td>18 jun 2026</td>
-                                <td>18:00</td>
-                                <td>
-                                    <ul>
-                                        <li>Pizza Margeritha (2x)</li>
-                                        <li>Coca Cola (1x)</li>
-                                        <li>Fanta Sinaasappel (1x)</li>
-                                    </ul>
-                                </td>
-                                <td>In de oven</td>
-                            </tr>
-                            <tr>
-                                <td>#1038</td>
-                                <td>24 jan 2026</td>
-                                <td>19:15</td>
-                                <td>
-                                    <ul>
-                                        <li>Pizza Diavola (1x)</li>
-                                        <li>Spa Blauw / Rood (2x)</li>
-                                    </ul>
-                                </td>
-                                <td>Bezorgd</td>
-                            </tr>
-                            <tr>
-                                <td>#1031</td>
-                                <td>12 jan 2026</td>
-                                <td>17:45</td>
-                                <td>
-                                    <ul>
-                                        <li>Pizza Prosciutto e Funghi (1x)</li>
-                                        <li>Fanta Sinaasappel (2x)</li>
-                                    </ul>
-                                </td>
-                                <td>Bezorgd</td>
-                            </tr>
-                            <tr>
-                                <td>#1024</td>
-                                <td>5 jan 2026</td>
-                                <td>20:30</td>
-                                <td>
-                                    <ul>
-                                        <li>Pizza Quattro Stagioni (1x)</li>
-                                        <li>Coca Cola (1x)</li>
-                                    </ul>
-                                </td>
-                                <td>Bezorgd</td>
-                            </tr>
+                            <?php foreach ($orders as $order): ?>
+                                <tr>
+                                    <td>#<?= $order['order_id'] ?></td>
+                                    <td><?= date('d-m-Y H:i', strtotime($order['datetime'])) ?></td>
+                                    <td>
+                                        <ul>
+                                            <?php foreach ($order['products'] as $product): ?>
+                                                <li><?= $product['product_name'] ?> (<?= $product['quantity'] ?>x)</li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </td>
+                                    <td><?= $statusLabels[$order['status']] ?? 'Onbekend' ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+
+                            <?php if (empty($orders)): ?>
+                                <tr>
+                                    <td colspan="4">Nog geen bestellingen geplaatst.</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
