@@ -1,4 +1,14 @@
 <?php
+require_once __DIR__ . '/config/init.php';
+require_once __DIR__ . '/models/User.php';
+
+$userModel = new User($pdo);
+
+if (!$userModel->isLoggedIn() || $userModel->hasRole('Personnel')) {
+    header('location: /register-login.php');
+    exit;
+}
+
 $pageTitle = 'Bestellingsoverzicht medewerkers | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
 ?>
@@ -7,7 +17,13 @@ require __DIR__ . '/components/head.php';
 
 <main>
     <section class="container">
-        <h1>Bestellingen van vandaag</h1>
+        <div class="title-button-row">
+            <h1>Bestellingen van vandaag</h1>
+
+            <a href="/actions/user-logout.php" class="btn btn-secondary">
+                Uitloggen
+            </a>
+        </div>
 
         <div class="table-container">
             <table>

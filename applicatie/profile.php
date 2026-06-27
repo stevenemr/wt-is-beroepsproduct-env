@@ -1,4 +1,16 @@
 <?php
+require_once __DIR__ . '/config/init.php';
+require_once __DIR__ . '/models/User.php';
+
+$userModel = new User($pdo);
+
+if (!$userModel->isLoggedIn()) {
+    header('location: /register-login.php');
+    exit;
+}
+
+$user = $userModel->getCurrentUser();
+
 $pageTitle = 'Profiel | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
 ?>
@@ -7,19 +19,24 @@ require __DIR__ . '/components/head.php';
 
 <main>
     <section class="container">
-        <h1>Profiel</h1>
+        <div class="title-button-row">
+            <h1>Profiel</h1>
+
+            <a href="/actions/user-logout.php" class="btn btn-secondary">
+                Uitloggen
+            </a>
+        </div>
 
         <div class="dashboard-grid">
             <article class="dashboard-panel">
 
                 <div class="profile-card">
                     <div class="user-profile-picture user-profile-picture-lg">
-                        <span>S</span>
+                        <span><?= substr($user['first_name'], 0, 1) ?></span>
                     </div>
 
                     <div>
-                        <h2>Steven Roest</h2>
-                        <p>Bakkerstraat 81, <br> 6811 EJ Arnhem</p>
+                        <h2><?= $user['first_name'] . ' ' . $user['last_name'] ?></h2>
                     </div>
                 </div>
 
