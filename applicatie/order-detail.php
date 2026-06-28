@@ -1,5 +1,55 @@
 <?php
-$pageTitle = 'Bestelling #1042 | Pizzeria Sole Machina 🍕';
+require_once __DIR__ . '/config/init.php';
+require_once __DIR__ . '/models/User.php';
+require_once __DIR__ . '/models/PizzaOrder.php';
+require_once __DIR__ . '/models/Menu.php';
+require_once __DIR__ . '/models/Cart.php';
+
+
+$userModel = new User($pdo);
+$pizzaOrderModel = new PizzaOrder($pdo);
+
+if (!$userModel->isLoggedIn() || !$userModel->hasRole('Personnel')) {
+    header('location: /register-login.php');
+    exit;
+}
+
+if (!isset($_GET['id'])) {
+    header('location: staff-orders.php');
+    exit;
+}
+
+$orderId = $_GET['id'];
+$order = $pizzaOrderModel->getById($orderId);
+
+// If order doesn't exist, go to staff orders page
+if (!$order) {
+    header('location: staff-orders.php');
+    exit;
+}
+
+$menuModel = new Menu($pdo);
+$productPrices = [];
+foreach ($menuModel->all() as $product) {
+    if (!isset($productPrices[$product['name']])) {
+        $productPrices[$product['name']] = $product['price'];
+    }
+}
+
+// Calculate price of order
+$subtotal = 0;
+foreach ($order['products'] as $product) {
+    $price = $productPrices[$product['product_name']] ?? 0;
+    $subtotal += $price * $product['quantity'];
+}
+
+$statusLabels = [
+    1 => 'In de oven',
+    2 => 'Onderweg',
+    3 => 'Bezorgd'
+];
+
+$pageTitle = 'Bestelling #' . $orderId . ' | Pizzeria Sole Machina 🍕';
 require __DIR__ . '/components/head.php';
 ?>
 
@@ -8,7 +58,7 @@ require __DIR__ . '/components/head.php';
 <main>
     <section class="container">
         <div class="title-button-row">
-            <h1>Bestelling #1042</h1>
+            <h1>Bestelling #<?= $orderId ?></h1>
             <a href="/staff-orders.php" class="btn btn-secondary">Terug naar overzicht</a>
         </div>
 
@@ -20,19 +70,19 @@ require __DIR__ . '/components/head.php';
                     <tbody>
                         <tr>
                             <th>Naam</th>
-                            <td>Steven Roest</td>
+                            <td><?= htmlspecialchars($order['client_name']) ?></td>
                         </tr>
                         <tr>
                             <th>Afleveradres</th>
-                            <td>Bakkerstraat 81, 6811 EJ Arnhem</td>
+                            <td><?= htmlspecialchars($order['address']) ?></td>
                         </tr>
                         <tr>
                             <th>Besteltijd</th>
-                            <td>17:45</td>
+                            <td><?= date('H:i', strtotime($order['datetime'])) ?></td>
                         </tr>
                         <tr>
                             <th>Status</th>
-                            <td>In de oven</td>
+                            <td><?= $statusLabels[$order['status']] ?? 'Onbekend' ?></td>
                         </tr>
                     </tbody>
                 </table>
@@ -41,11 +91,12 @@ require __DIR__ . '/components/head.php';
             <article class="dashboard-panel">
                 <h2>Status aanpassen</h2>
 
-                <form class="status-form" action="/staff-orders.php" method="get">
-                    <label for="order-status">Nieuwe status</label>
-                    <select id="order-status" name="order-status">
-                        <option value="in-de-oven" selected>In de oven</option>
-                        <option value="onderweg">Onderweg</option>
+                <form class="status-form" action="/actions/order-change-status.php?id=<?= $orderId ?>" method="POST">
+                    <label for="order_status">Nieuwe status</label>
+                    <select id="order_status" name="order_status">
+                        <?php foreach ($statusLabels as $key => $label): ?>
+                            <option value="<?= $key ?>" <?= $order['status'] == $key ? 'selected' : null ?>><?= $label ?></option>
+                        <?php endforeach; ?>
                     </select>
 
                     <button type="submit" class="btn btn-primary">Status opslaan</button>
@@ -64,24 +115,15 @@ require __DIR__ . '/components/head.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Pizza Margherita</td>
-                        <td>2</td>
-                        <td>€10,50</td>
-                        <td>€21,00</td>
-                    </tr>
-                    <tr>
-                        <td>Coca-Cola</td>
-                        <td>1</td>
-                        <td>€2,75</td>
-                        <td>€2,75</td>
-                    </tr>
-                    <tr>
-                        <td>Fanta Sinaasappel</td>
-                        <td>1</td>
-                        <td>€2,75</td>
-                        <td>€2,75</td>
-                    </tr>
+                    <?php foreach ($order['products'] as $product): ?>
+                        <?php $price = $productPrices[$product['product_name']] ?? 0; ?>
+                        <tr>
+                            <td><?= htmlspecialchars($product['product_name']) ?></td>
+                            <td><?= $product['quantity'] ?></td>
+                            <td>&euro;<?= number_format($price, 2, ',') ?></td>
+                            <td>&euro;<?= number_format($price * $product['quantity'], 2, ',') ?></td>
+                        </tr>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -90,15 +132,15 @@ require __DIR__ . '/components/head.php';
             <tbody>
                 <tr>
                     <th>Subtotaal:</th>
-                    <td>€26,50</td>
+                    <td>&euro;<?= number_format($subtotal, 2, ',') ?></td>
                 </tr>
                 <tr>
                     <th>Bezorgkosten:</th>
-                    <td>€4,99</td>
+                    <td>&euro;<?= number_format(DELIVERY_COSTS, 2, ',') ?></td>
                 </tr>
                 <tr>
                     <th>Totaal:</th>
-                    <td>€31,49</td>
+                    <td>&euro;<?= number_format($subtotal + DELIVERY_COSTS, 2, ',') ?></td>
                 </tr>
             </tbody>
         </table>

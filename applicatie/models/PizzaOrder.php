@@ -86,6 +86,56 @@ class PizzaOrder extends BaseModel
         return $orders;
     }
 
+    /**
+     * Get a single order by ID.
+     *
+     * @param  int $orderId
+     * @return array|false
+     */
+    public function getById(int $orderId): array|false
+    {
+        $stmt = $this->db->prepare('
+            SELECT * FROM Pizza_Order po 
+            JOIN Pizza_Order_Product pop ON po.order_id = pop.order_id
+            WHERE po.order_id = :order_id
+        ');
+        $stmt->execute(['order_id' => $orderId]);
+        $ordersRaw = $stmt->fetchAll();
+
+        if (empty($ordersRaw)) {
+            return false;
+        }
+
+        $order = [
+            'order_id'          => $orderId,
+            'client_username'    => null,
+            'client_name'        => null,
+            'personnel_username' => null,
+            'datetime'           => null,
+            'status'             => null,
+            'address'            => null,
+            'products'           => []
+        ];
+
+        foreach ($ordersRaw as $row) {
+            if (!$order['client_name']) {
+                $order['client_username']    = $row['client_username'];
+                $order['client_name']        = $row['client_name'];
+                $order['personnel_username'] = $row['personnel_username'];
+                $order['datetime']           = $row['datetime'];
+                $order['status']             = $row['status'];
+                $order['address']            = $row['address'];
+            }
+
+            $order['products'][] = [
+                'product_name' => $row['product_name'],
+                'quantity'     => $row['quantity']
+            ];
+        }
+
+        return $order;
+    }
+
 
     /**
      * Get all orders for today.
@@ -158,5 +208,18 @@ class PizzaOrder extends BaseModel
         foreach ($order as $orderItem) {
             $stmt->execute(['order_id' => $orderId, 'product_name' => $orderItem['name'], 'quantity' => $orderItem['quantity']]);
         }
+    }
+
+    /**
+     * Change the status of an order.
+     *
+     * @param  int $orderId
+     * @param  int $status
+     * @return bool
+     */
+    public function changeStatus(int $orderId, int $status): bool
+    {
+        $stmt = $this->db->prepare("UPDATE Pizza_Order SET status = :status WHERE order_id = :order_id");
+        return $stmt->execute(['status' => $status, 'order_id' => $orderId]);
     }
 }
